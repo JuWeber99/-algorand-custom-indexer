@@ -25,7 +25,7 @@ type kafkaExporter struct {
 	round          uint64
 	cfg            KafkaExporterConfiguration
 	topicPartition kafka.TopicPartition
-	kafkaConfigMap kafka.ConfigMap
+	kafkaConfigMap *kafka.ConfigMap
 	producer       *kafka.Producer
 }
 
@@ -52,16 +52,21 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 		return fmt.Errorf("connect failure in unmarshalConfig: %v", err)
 	}
 
-	exp.kafkaConfigMap = kafka.ConfigMap{
-		"bootstrap.servers":  exp.cfg.BootstrapServer,
+	bootstrapServers := [...]string{exp.cfg.BootstrapServer}
+	exp.kafkaConfigMap = &kafka.ConfigMap{
+		"bootstrap.servers":  bootstrapServers,
 		"security.protocol":  exp.cfg.SecurityProtocol,
 		"sasl.username":      exp.cfg.Username,
 		"sasl.password":      exp.cfg.Password,
 		"session.timeout.ms": exp.cfg.SessionTimeout,
 	}
+	fmt.Print(bootstrapServers)
+	fmt.Print(&exp.kafkaConfigMap)
 	fmt.Print(exp.kafkaConfigMap)
-	p, err := kafka.NewProducer(&exp.kafkaConfigMap)
+	p, err := kafka.NewProducer(exp.kafkaConfigMap)
 	if err != nil {
+		fmt.Println()
+		fmt.Printf(err.Error())
 		fmt.Printf("Cannot create producer -- failing")
 		os.Exit(1)
 	}

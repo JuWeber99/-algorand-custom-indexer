@@ -59,8 +59,7 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 		"sasl.username":     exp.cfg.Username,
 		"sasl.password":     exp.cfg.Password,
 	}
-	fmt.Print(&exp.kafkaConfigMap)
-	fmt.Print(exp.kafkaConfigMap)
+
 	p, err := kafka.NewProducer(exp.kafkaConfigMap)
 	if err != nil {
 		fmt.Println()
@@ -115,24 +114,26 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	err := enc.Encode(validBlock)
 	if err != nil {
 		logrus.Errorf(err.Error())
-	}
-
-	delivery_chan := make(chan kafka.Event, 10000)
-	err = exp.producer.Produce(&kafka.Message{
-		TopicPartition: exp.topicPartition,
-		Value:          buf.Bytes(), //here eneded the encoded
-	}, delivery_chan)
-
-	e := <-delivery_chan
-	m := e.(*kafka.Message)
-
-	if m.TopicPartition.Error != nil {
-		fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
 	} else {
-		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
-			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+		logrus.Debugln(buf)
 	}
-	close(delivery_chan)
+
+	// delivery_chan := make(chan kafka.Event, 10000)
+	// err = exp.producer.Produce(&kafka.Message{
+	// 	TopicPartition: exp.topicPartition,
+	// 	Value:          buf.Bytes(), //here eneded the encoded
+	// }, delivery_chan)
+
+	// e := <-delivery_chan
+	// m := e.(*kafka.Message)
+
+	// if m.TopicPartition.Error != nil {
+	// 	fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+	// } else {
+	// 	fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+	// 		*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+	// }
+	// close(delivery_chan)
 
 	return nil
 }

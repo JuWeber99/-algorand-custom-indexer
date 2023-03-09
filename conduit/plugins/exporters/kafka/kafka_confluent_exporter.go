@@ -28,6 +28,7 @@ type kafkaExporter struct {
 	topicPartition kafka.TopicPartition
 	kafkaConfigMap *kafka.ConfigMap
 	producer       *kafka.Producer
+	logger         *logrus.Logger
 }
 
 //go:embed sample.yaml
@@ -48,7 +49,9 @@ func (exp *kafkaExporter) Metadata() conduit.Metadata {
 }
 
 // Init provides the opportunity for your Exporter to initialize connections, store config variables, etc.
-func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginConfig plugins.PluginConfig, _ *logrus.Logger) error {
+func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.InitProvider, pluginConfig plugins.PluginConfig, logger *logrus.Logger) error {
+
+	exp.logger = logger
 	if err := pluginConfig.UnmarshalConfig(&exp.cfg); err != nil {
 		return fmt.Errorf("connect failure in unmarshalConfig: %v", err)
 	}
@@ -70,6 +73,7 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 	}
 	exp.producer = p
 	exp.topicPartition = kafka.TopicPartition{Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny}
+	exp.round = uint64(initializationProvider.NextDBRound())
 
 	return nil
 }
@@ -137,8 +141,9 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
 	}
 	close(delivery_chan)
+	fmt.Printf("ready, rount finished: %d", &exp.round)
 	atomic.StoreUint64(&exp.round, exportData.Round()+1)
-
+	fmt.Printf("stored, r now: %d", &exp.round)
 	return nil
 }
 

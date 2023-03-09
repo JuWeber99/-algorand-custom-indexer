@@ -22,9 +22,11 @@ import (
 
 // This is our exporter object. It should store all the in memory data required to run the Exporter.
 type kafkaExporter struct {
-	round    uint64
-	cfg      KafkaExporterConfiguration
-	producer *kafka.Producer
+	round          uint64
+	cfg            KafkaExporterConfiguration
+	topicPartition kafka.TopicPartition
+	kafkaConfigMap kafka.ConfigMap
+	producer       *kafka.Producer
 }
 
 //go:embed sample.yaml
@@ -50,12 +52,21 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 		return fmt.Errorf("connect failure in unmarshalConfig: %v", err)
 	}
 
-	p, err := kafka.NewProducer(&exp.cfg)
+	exp.kafkaConfigMap = kafka.ConfigMap{
+		"bootstrap.servers":  &exp.cfg.BootstrapServer,
+		"security.protocol":  &exp.cfg.SecurityProtocol,
+		"sasl.username":      &exp.cfg.Username,
+		"sasl.password":      &exp.cfg.Password,
+		"session.timeout.ms": &exp.cfg.SessionTimeout,
+	}
+
+	p, err := kafka.NewProducer(&exp.kafkaConfigMap)
 	if err != nil {
 		fmt.Printf("Cannot create producer -- failing")
 		os.Exit(1)
 	}
 	exp.producer = p
+	exp.topicPartition = kafka.TopicPartition{Topic: &exp.cfg.Topic}
 
 	return nil
 }
@@ -105,7 +116,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 
 	delivery_chan := make(chan kafka.Event, 10000)
 	err = exp.producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny},
+		TopicPartition: kafka.TopicPartition{Topic: &exp.topic, Partition: kafka.PartitionAny},
 		Value:          buf.Bytes(), //here eneded the encoded
 	}, delivery_chan)
 

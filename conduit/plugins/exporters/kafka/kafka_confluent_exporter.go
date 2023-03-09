@@ -53,12 +53,11 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 	}
 
 	exp.kafkaConfigMap = &kafka.ConfigMap{
-		"bootstrap.servers":  exp.cfg.BootstrapServer,
-		"security.protocol":  exp.cfg.SecurityProtocol,
-		"sasl.mechanisms":    exp.cfg.SaslMechanisms,
-		"sasl.username":      exp.cfg.Username,
-		"sasl.password":      exp.cfg.Password,
-		"session.timeout.ms": exp.cfg.SessionTimeout,
+		"bootstrap.servers": exp.cfg.BootstrapServer,
+		"security.protocol": exp.cfg.SecurityProtocol,
+		"sasl.mechanisms":   exp.cfg.SaslMechanisms,
+		"sasl.username":     exp.cfg.Username,
+		"sasl.password":     exp.cfg.Password,
 	}
 	fmt.Print(&exp.kafkaConfigMap)
 	fmt.Print(exp.kafkaConfigMap)

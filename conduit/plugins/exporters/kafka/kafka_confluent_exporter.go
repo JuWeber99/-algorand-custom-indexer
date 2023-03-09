@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
+	"sync/atomic"
 
 	sdk "github.com/algorand/go-algorand-sdk/v2/types"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -85,7 +86,8 @@ func (exp *kafkaExporter) Config() string {
 
 // Close provides the opportunity to close connections, flush buffers, etc. when the process is terminating
 func (exp *kafkaExporter) Close() error {
-	panic("not implemented")
+	fmt.Printf("WOOP WOOP")
+	return nil
 }
 
 // Receive is the main handler function for blocks
@@ -115,32 +117,29 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	if err != nil {
 		logrus.Errorf(err.Error())
 	} else {
+
 		logrus.Debugln(buf)
 	}
 
-	// delivery_chan := make(chan kafka.Event, 10000)
-	// err = exp.producer.Produce(&kafka.Message{
-	// 	TopicPartition: exp.topicPartition,
-	// 	Value:          buf.Bytes(), //here eneded the encoded
-	// }, delivery_chan)
+	delivery_chan := make(chan kafka.Event, 10000)
+	err = exp.producer.Produce(&kafka.Message{
+		TopicPartition: exp.topicPartition,
+		Value:          buf.Bytes(), //here eneded the encoded
+	}, delivery_chan)
 
-	// e := <-delivery_chan
-	// m := e.(*kafka.Message)
+	e := <-delivery_chan
+	m := e.(*kafka.Message)
 
-	// if m.TopicPartition.Error != nil {
-	// 	fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
-	// } else {
-	// 	fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
-	// 		*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
-	// }
-	// close(delivery_chan)
+	if m.TopicPartition.Error != nil {
+		fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+	} else {
+		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+	}
+	close(delivery_chan)
+	atomic.StoreUint64(&exp.round, exportData.Round()+1)
 
 	return nil
-}
-
-// Round should return the round number of the next expected round that should be provided to the Exporter
-func (exp *kafkaExporter) Round() uint64 {
-	panic("not implemented")
 }
 
 func init() {

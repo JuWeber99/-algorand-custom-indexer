@@ -66,7 +66,7 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 		os.Exit(1)
 	}
 	exp.producer = p
-	exp.topicPartition = kafka.TopicPartition{Topic: &exp.cfg.Topic}
+	exp.topicPartition = kafka.TopicPartition{Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny}
 
 	return nil
 }

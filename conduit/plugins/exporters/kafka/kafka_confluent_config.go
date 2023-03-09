@@ -13,6 +13,7 @@ type KafkaExporterConfiguration struct {
 	This means the total number of active queries that can be running concurrently can never be more than this.
 	*/
 	SecurityProtocol string `yaml:"security.protocol"`
+	SaslMechanisms   string `yaml:"sasl.mechanisms"`
 	Topic            string `yaml:"topic"`
 	/* <code>max-conn</code> specifies the maximum connection number for the connection pool.<br/>
 	This means the total number of active queries that can be running concurrently can never be more than this.

@@ -53,13 +53,13 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 	}
 
 	exp.kafkaConfigMap = kafka.ConfigMap{
-		"bootstrap.servers":  &exp.cfg.BootstrapServer,
-		"security.protocol":  &exp.cfg.SecurityProtocol,
-		"sasl.username":      &exp.cfg.Username,
-		"sasl.password":      &exp.cfg.Password,
-		"session.timeout.ms": &exp.cfg.SessionTimeout,
+		"bootstrap.servers":  exp.cfg.BootstrapServer,
+		"security.protocol":  exp.cfg.SecurityProtocol,
+		"sasl.username":      exp.cfg.Username,
+		"sasl.password":      exp.cfg.Password,
+		"session.timeout.ms": exp.cfg.SessionTimeout,
 	}
-	fmt.Print(&exp.kafkaConfigMap)
+	fmt.Print(exp.kafkaConfigMap)
 	p, err := kafka.NewProducer(&exp.kafkaConfigMap)
 	if err != nil {
 		fmt.Printf("Cannot create producer -- failing")

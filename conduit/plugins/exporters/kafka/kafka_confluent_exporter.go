@@ -52,15 +52,13 @@ func (exp *kafkaExporter) Init(_ context.Context, _ data.InitProvider, pluginCon
 		return fmt.Errorf("connect failure in unmarshalConfig: %v", err)
 	}
 
-	bootstrapServers := [...]string{exp.cfg.BootstrapServer}
 	exp.kafkaConfigMap = &kafka.ConfigMap{
-		"bootstrap.servers":  bootstrapServers,
+		"bootstrap.servers":  exp.cfg.BootstrapServer,
 		"security.protocol":  exp.cfg.SecurityProtocol,
 		"sasl.username":      exp.cfg.Username,
 		"sasl.password":      exp.cfg.Password,
 		"session.timeout.ms": exp.cfg.SessionTimeout,
 	}
-	fmt.Print(bootstrapServers)
 	fmt.Print(&exp.kafkaConfigMap)
 	fmt.Print(exp.kafkaConfigMap)
 	p, err := kafka.NewProducer(exp.kafkaConfigMap)

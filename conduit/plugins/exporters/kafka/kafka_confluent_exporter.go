@@ -42,7 +42,7 @@ var metadata = conduit.Metadata{
 }
 
 // Metadata returns the Exporter's Metadata object
-func (exp *kafkaExporter) Metadata() conduit.Metadata {
+func (exp *kafkaExpo<rter) Metadata() conduit.Metadata {
 	return metadata
 }
 

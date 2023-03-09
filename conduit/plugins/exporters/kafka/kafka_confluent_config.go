@@ -19,5 +19,5 @@ type KafkaExporterConfiguration struct {
 	*/
 	Username       string `yaml:"sasl.username"`
 	Password       string `yaml:"sasl.password"`
-	SessionTimeout uint32 `yaml:"session.timeout.ms"`
+	SessionTimeout int    `yaml:"session.timeout.ms"`
 }

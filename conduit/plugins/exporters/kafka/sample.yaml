@@ -1,0 +1,7 @@
+bootstrap.servers: 'pkc-zpjg0.eu-central-1.aws.confluent.cloud:9092'
+security.protocol: 'SASL_SSL'
+sasl.username: 'BA6DPRSP5U2DAT2B'
+sasl.password: '5fuZVbin43oJU4Ea2H4yLiGf6VisrrqihPXGRQyDo/vz4Y5'
+# Best practice for higher availability in librdkafka clients prior to 1.7
+session.timeout.ms: 45000
+topic: "algoblocks"

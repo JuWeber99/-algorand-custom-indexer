@@ -116,7 +116,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 
 	delivery_chan := make(chan kafka.Event, 10000)
 	err = exp.producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &exp.topic, Partition: kafka.PartitionAny},
+		TopicPartition: exp.topicPartition,
 		Value:          buf.Bytes(), //here eneded the encoded
 	}, delivery_chan)
 

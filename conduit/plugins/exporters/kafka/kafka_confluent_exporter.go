@@ -18,7 +18,6 @@ import (
 	"github.com/algorand/indexer/conduit/data"
 	"github.com/algorand/indexer/conduit/plugins"
 	"github.com/algorand/indexer/conduit/plugins/exporters"
-	"github.com/algorand/indexer/types"
 )
 
 // This is our exporter object. It should store all the in memory data required to run the Exporter.
@@ -110,14 +109,14 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 				return fmt.Errorf("protocol %s not found", block.CurrentProtocol)
 		}
 	*/
-	validBlock := types.ValidatedBlock{
-		Block: sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset},
-		Delta: *exportData.Delta,
-	}
+	// validBlock := types.ValidatedBlock{
+	// 	Block: sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset},
+	// 	Delta: *exportData.Delta,
+	// }
 
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(validBlock)
+	err := enc.Encode(exportData)
 	if err != nil {
 		logrus.Errorf(err.Error())
 	} else {

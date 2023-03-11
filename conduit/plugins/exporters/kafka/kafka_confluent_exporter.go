@@ -37,7 +37,7 @@ var metadata = conduit.Metadata{
 	Name:         "kafka",
 	Description:  "kafka confluent exporter",
 	Deprecated:   false,
-	SampleConfig: sampleConfig,
+	SampleConfig: "sampleConfig",
 }
 
 // Metadata returns the Exporter's Metadata object

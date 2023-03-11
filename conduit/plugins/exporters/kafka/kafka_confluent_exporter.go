@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed" // used to embed config
+	"encoding/binary"
 	"encoding/gob"
 	"fmt"
 	"os"
@@ -69,7 +70,7 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 		os.Exit(1)
 	}
 	exp.producer = p
-	exp.topicPartition = kafka.TopicPartition{Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny}
+	exp.topicPartition = kafka.TopicPartition{Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny, Offset: kafka.OffsetEnd}
 	exp.round = uint64(initializationProvider.NextDBRound())
 
 	return nil
@@ -120,11 +121,18 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	} else {
 		logrus.Debugln(buf)
 	}
-
+	offset := make([]byte, 8)
+	binary.BigEndian.PutUint64(offset, exp.round)
 	delivery_chan := make(chan kafka.Event, 10000)
 	err = exp.producer.Produce(&kafka.Message{
 		TopicPartition: exp.topicPartition,
 		Value:          buf.Bytes(), //here eneded the encoded
+		Headers: []kafka.Header{
+			{
+				Key:   "offset",
+				Value: offset, // set the offset value as a byte slice
+			},
+		},
 	}, delivery_chan)
 
 	e := <-delivery_chan

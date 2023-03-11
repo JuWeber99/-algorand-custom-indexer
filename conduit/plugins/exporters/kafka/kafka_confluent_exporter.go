@@ -54,11 +54,12 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 	}
 
 	exp.kafkaConfigMap = &kafka.ConfigMap{
-		"bootstrap.servers": exp.cfg.BootstrapServer,
-		"security.protocol": exp.cfg.SecurityProtocol,
-		"sasl.mechanisms":   exp.cfg.SaslMechanisms,
-		"sasl.username":     exp.cfg.Username,
-		"sasl.password":     exp.cfg.Password,
+		"bootstrap.servers":  exp.cfg.BootstrapServer,
+		"security.protocol":  exp.cfg.SecurityProtocol,
+		"sasl.mechanisms":    exp.cfg.SaslMechanisms,
+		"sasl.username":      exp.cfg.Username,
+		"sasl.password":      exp.cfg.Password,
+		"enable.idempotence": true,
 	}
 
 	p, err := kafka.NewProducer(exp.kafkaConfigMap)

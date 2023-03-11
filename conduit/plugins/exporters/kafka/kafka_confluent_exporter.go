@@ -120,7 +120,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		logrus.Debugln(buf)
 	}
 	offset := make([]byte, 8)
-	binary.BigEndian.PutUint64(offset, exp.round)
+	binary.LittleEndian.PutUint64(offset, exp.round)
 	delivery_chan := make(chan kafka.Event, 10000)
 	fmt.Println("offset")
 	fmt.Println(offset)

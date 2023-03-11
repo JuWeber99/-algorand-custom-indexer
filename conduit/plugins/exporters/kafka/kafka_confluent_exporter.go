@@ -128,7 +128,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	fmt.Println(exp.round)
 	err = exp.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
-			Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny, Offset: kafka.Offset(exp.round),
+			Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny, Offset: kafka.Offset(kafka.OffsetEnd),
 		},
 		Value: buf.Bytes(), //here eneded the encoded
 		Headers: []kafka.Header{

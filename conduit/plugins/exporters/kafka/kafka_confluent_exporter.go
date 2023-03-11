@@ -122,6 +122,10 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	offset := make([]byte, 8)
 	binary.BigEndian.PutUint64(offset, exp.round)
 	delivery_chan := make(chan kafka.Event, 10000)
+	fmt.Println("offset")
+	fmt.Println(offset)
+	fmt.Println("round")
+	fmt.Println(exp.round)
 	err = exp.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny, Offset: kafka.Offset(exp.round),

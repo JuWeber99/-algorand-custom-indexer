@@ -113,13 +113,13 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		Delta: *exportData.Delta,
 	}
 	jsonData, marshalError := json.Marshal(exportData)
-	fmt.Println(string(jsonData))
-
+	fmt.Printf(string(jsonData))
+	fmt.Printf("round is: %v", exportData.Round())
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(validBlock)
 	if marshalError != nil {
-		fmt.Errorf("Error: %v", marshalError)
+		fmt.Printf("Error: %v", marshalError)
 	}
 	if err != nil {
 		logrus.Errorf(err.Error())

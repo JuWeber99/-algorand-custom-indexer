@@ -53,7 +53,7 @@ func ProduceMessage(exporter *kafkaExporter, key []byte, value []byte, topic str
 		},
 	}
 
-	deliveryChannel := make(chan kafka.Event, 10000)
+	deliveryChannel := make(chan kafka.Event)
 	err := exporter.producer.Produce(message, deliveryChannel)
 	if err != nil {
 		return nil, err
@@ -61,26 +61,23 @@ func ProduceMessage(exporter *kafkaExporter, key []byte, value []byte, topic str
 
 	ev := <-deliveryChannel
 	m := ev.(*kafka.Message)
+	close(deliveryChannel)
 
 	if m.TopicPartition.Error != nil {
 		logrus.Errorf("Delivery failed: %v\n", m.TopicPartition.Error)
 		logrus.Infof("Writing to DLQ: %v\n", *exporter.DlqName)
-
-	} else {
-		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
-			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
-		err := exporter.producer.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{
-				Topic: exporter.DlqName, Partition: kafka.PartitionAny,
-			},
-			Value: value,
-			Key:   key,
-		}, deliveryChannel)
+		message.TopicPartition.Topic =  exporter.DlqName
+		dlqChannel := make(chan kafka.Event)
+		err := exporter.producer.Produce(message, dlqChannel)
 		if err != nil {
 			logrus.Errorf(err.Error())
 		}
+		close(dlqChannel)
+	} else {
+		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset
+		)
 	}
-	close(deliveryChannel)
 	return m, nil
 }
 

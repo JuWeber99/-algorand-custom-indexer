@@ -148,7 +148,8 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		logrus.Errorf("Error: %s", err.Error())
 	} else {
 		logrus.Infof("Produced Message pack equivalent of Block for Round: %d", binary.LittleEndian.Uint64(producedMessage.Key))
-		logrus.Infof("Block: %v", msgpack.Decode(producedMessage.Value, sdk.Block{}))
+		var decodedBlock sdk.Block
+		logrus.Infof("Block: %v", msgpack.Decode(producedMessage.Value, &decodedBlock))
 		logrus.Infof("Block_DECODE: %v", msgpack.Decode(kafkaBlock, sdk.Block{}))
 	}
 	atomic.StoreUint64(&exp.round, exportData.Round()+1)

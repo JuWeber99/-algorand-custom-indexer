@@ -86,6 +86,8 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 	exp.logger = logger
 	if !exp.cfg.DebugLogLvl {
 		exp.logger.SetLevel(logrus.DebugLevel)
+	} else {
+		exp.logger.SetLevel(logrus.InfoLevel)
 	}
 	if err := pluginConfig.UnmarshalConfig(&exp.cfg); err != nil {
 		return fmt.Errorf("connect failure in unmarshalConfig: %v", err)
@@ -152,8 +154,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		logrus.Infof("Produced Message pack equivalent of Block for Round: %d", binary.LittleEndian.Uint64(producedMessage.Key))
 		var decodedBlock sdk.Block
 		msgpack.Decode(producedMessage.Value, &decodedBlock)
-		logrus.Infof("Block: %v", decodedBlock)
-		//logrus.Infof("Block_DECODE: %v", msgpack.Decode(kafkaBlock, sdk.Block{}))
+		logrus.Debugf("Block: %v", decodedBlock)
 	}
 	atomic.StoreUint64(&exp.round, exportData.Round()+1)
 	logrus.Infof("Advancing conduit round by 1 to: %d", exp.round)

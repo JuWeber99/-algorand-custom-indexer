@@ -120,7 +120,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	if marshalError != nil {
 		fmt.Errorf("Error: %v", marshalError)
 	}
-	fmt.Println(jsonData)
+	fmt.Println(string(jsonData))
 	if err != nil {
 		logrus.Errorf(err.Error())
 	} else {

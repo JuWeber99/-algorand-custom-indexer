@@ -145,8 +145,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	if err != nil {
 		logrus.Errorf("Error: %s", err.Error())
 	} else {
-		var decodedBlock sdk.Block
-		logrus.Infof("Produced Message pack equivalent of Block: %v", msgpack.Decode(producedMessage.Value, decodedBlock))
+		logrus.Infof("Produced Message pack equivalent of Block: %v", producedMessage.Value)
 	}
 	fmt.Printf("ready, round finished: %d", &exp.round)
 	atomic.StoreUint64(&exp.round, exportData.Round()+1)

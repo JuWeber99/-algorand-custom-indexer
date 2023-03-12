@@ -5,7 +5,6 @@ import (
 	_ "embed" // used to embed config
 	"encoding/binary"
 	"fmt"
-	"os"
 	"sync/atomic"
 
 	"github.com/algorand/go-algorand-sdk/v2/encoding/msgpack"
@@ -43,6 +42,47 @@ func (exp *kafkaExporter) Metadata() conduit.Metadata {
 	return metadata
 }
 
+func ProduceMessage(exporter *kafkaExporter, key []byte, value []byte, topic string) (*kafka.Message, error) {
+	message := &kafka.Message{
+		Key:   key,
+		Value: value,
+		TopicPartition: kafka.TopicPartition{
+			Topic:     &topic,
+			Partition: kafka.PartitionAny,
+		},
+	}
+
+	deliveryChannel := make(chan kafka.Event)
+	err := exporter.producer.Produce(message, deliveryChannel)
+	if err != nil {
+		return nil, err
+	}
+
+	ev := <-deliveryChannel
+	m := ev.(*kafka.Message)
+
+	if m.TopicPartition.Error != nil {
+		logrus.Errorf("Delivery failed: %v\n", m.TopicPartition.Error)
+		logrus.Infof("Writing to DLQ: %v\n", exporter.cfg.DlqTopic)
+
+	} else {
+		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+		err := exporter.producer.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{
+				Topic: &exporter.cfg.DlqTopic, Partition: kafka.PartitionAny,
+			},
+			Value: value,
+			Key:   key,
+		}, deliveryChannel)
+		if err != nil {
+			logrus.Errorf(err.Error())
+		}
+	}
+	close(deliveryChannel)
+	return m, nil
+}
+
 // Init provides the opportunity for your Exporter to initialize connections, store config variables, etc.
 func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.InitProvider, pluginConfig plugins.PluginConfig, logger *logrus.Logger) error {
 
@@ -60,7 +100,6 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 		"enable.idempotence": true,
 	}
 	if &exp.cfg.DlqTopic == nil {
-		fmt.Printf("ASDDDDDDDDDDDFFFFFFFFFFFFFFFFFFFA")
 		exp.cfg.DlqTopic = fmt.Sprintf("dlq_%s", exp.cfg.Topic)
 	}
 
@@ -69,17 +108,11 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 		fmt.Println()
 		fmt.Printf(err.Error())
 		fmt.Printf("Cannot create producer -- failing")
-		os.Exit(1)
 	}
 	exp.producer = p
 	exp.round = uint64(initializationProvider.NextDBRound())
 
 	return nil
-}
-
-// Config returns the unmarshaled config object
-func (exp *kafkaExporter) unmarhshalConfig(cfg string) error {
-	return yaml.Unmarshal([]byte(cfg), &exp.cfg)
 }
 
 func (exp *kafkaExporter) Config() string {
@@ -103,38 +136,20 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		}
 	}
 	blockToExport := sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset}
-	//jsonBlock, marshalError := json.Marshal()
 	kafkaBlock := msgpack.Encode(blockToExport)
+	kafkaKey := make([]byte, 8)
+	binary.LittleEndian.PutUint64(kafkaKey, exp.round)
 
-	offset := make([]byte, 8)
-	binary.LittleEndian.PutUint64(offset, exp.round)
-	delivery_chan := make(chan kafka.Event, 10000)
-	err := exp.producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny,
-		},
-		Value: kafkaBlock,
-		Key:   offset,
-	}, delivery_chan)
+	producedMessage, err := ProduceMessage(exp, kafkaBlock, kafkaKey, exp.cfg.Topic)
+
 	if err != nil {
-		defer exp.producer.Close()
-		logrus.Errorf(err.Error())
-	}
-	e := <-delivery_chan
-	m := e.(*kafka.Message)
-
-	if m.TopicPartition.Error != nil {
-		logrus.Errorf("Delivery failed: %v\n", m.TopicPartition.Error)
-		logrus.Infof("Writing to DLQ: %v\n", exp.cfg.DlqTopic)
-
+		logrus.Errorf("Error: %s", err.Error())
 	} else {
-		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
-			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+		var decodedBlock sdk.Block
+		logrus.Infof("Produced Message pack equivalent of Block: %v", msgpack.Decode(producedMessage.Value, decodedBlock))
 	}
-	close(delivery_chan)
-	fmt.Printf("ready, rount finished: %d", &exp.round)
+	fmt.Printf("ready, round finished: %d", &exp.round)
 	atomic.StoreUint64(&exp.round, exportData.Round()+1)
-	fmt.Printf("stored, r now: %d", &exp.round)
 	return nil
 }
 

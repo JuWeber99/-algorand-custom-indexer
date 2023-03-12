@@ -53,7 +53,7 @@ func ProduceMessage(exporter *kafkaExporter, key []byte, value []byte, topic str
 		},
 	}
 
-	deliveryChannel := make(chan kafka.Event)
+	deliveryChannel := make(chan kafka.Event, 10000)
 	err := exporter.producer.Produce(message, deliveryChannel)
 	if err != nil {
 		return nil, err

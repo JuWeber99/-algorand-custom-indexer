@@ -112,7 +112,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		Block: sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset},
 		Delta: *exportData.Delta,
 	}
-	jsonData, marshalError := json.Marshal(exportData)
+	jsonData, marshalError := json.Marshal(sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset})
 	fmt.Printf(string(jsonData))
 	fmt.Printf("round is: %v", exportData.Round())
 	buf := bytes.Buffer{}

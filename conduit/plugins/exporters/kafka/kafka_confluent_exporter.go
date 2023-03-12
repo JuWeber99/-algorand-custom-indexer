@@ -84,6 +84,7 @@ func ProduceMessage(exporter *kafkaExporter, key []byte, value []byte, topic str
 func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.InitProvider, pluginConfig plugins.PluginConfig, logger *logrus.Logger) error {
 
 	exp.logger = logger
+	exp.logger.Level = logrus.DebugLevel
 	if err := pluginConfig.UnmarshalConfig(&exp.cfg); err != nil {
 		return fmt.Errorf("connect failure in unmarshalConfig: %v", err)
 	}

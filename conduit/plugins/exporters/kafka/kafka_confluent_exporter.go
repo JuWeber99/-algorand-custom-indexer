@@ -4,11 +4,11 @@ import (
 	"context"
 	_ "embed" // used to embed config
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync/atomic"
 
+	"github.com/algorand/go-algorand-sdk/v2/encoding/msgpack"
 	sdk "github.com/algorand/go-algorand-sdk/v2/types"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/sirupsen/logrus"
@@ -102,12 +102,10 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 			return fmt.Errorf("receive got an invalid block: %#v", exportData)
 		}
 	}
+	blockToExport := sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset}
+	//jsonBlock, marshalError := json.Marshal()
+	kafkaBlock := msgpack.Encode(blockToExport)
 
-	jsonBlock, marshalError := json.Marshal(sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset})
-
-	if marshalError != nil {
-		logrus.Errorf("Error: %v", marshalError)
-	}
 	offset := make([]byte, 8)
 	binary.LittleEndian.PutUint64(offset, exp.round)
 	delivery_chan := make(chan kafka.Event, 10000)
@@ -115,7 +113,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		TopicPartition: kafka.TopicPartition{
 			Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny,
 		},
-		Value: jsonBlock,
+		Value: kafkaBlock,
 		Key:   offset,
 	}, delivery_chan)
 	if err != nil {

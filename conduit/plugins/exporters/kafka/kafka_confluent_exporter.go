@@ -61,6 +61,7 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 	}
 	if &exp.cfg.DlqTopic == nil {
 		fmt.Printf("ASDDDDDDDDDDDFFFFFFFFFFFFFFFFFFFA")
+		exp.cfg.DlqTopic = fmt.Sprintf("dlq_%s", exp.cfg.Topic)
 	}
 
 	p, err := kafka.NewProducer(exp.kafkaConfigMap)

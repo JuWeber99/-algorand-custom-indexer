@@ -145,7 +145,7 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	kafkaKey := make([]byte, 8)
 	binary.LittleEndian.PutUint64(kafkaKey, exp.round)
 
-	producedMessage, err := ProduceMessage(exp, kafkaBlock, kafkaKey, exp.cfg.Topic)
+	producedMessage, err := ProduceMessage(exp, kafkaKey, kafkaBlock, exp.cfg.Topic)
 
 	if err != nil {
 		logrus.Errorf("Error: %s", err.Error())

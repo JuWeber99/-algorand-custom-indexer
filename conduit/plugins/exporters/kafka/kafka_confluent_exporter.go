@@ -112,7 +112,8 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 		Block: sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset},
 		Delta: *exportData.Delta,
 	}
-	jsonData, marshalError := json.Marshal(validBlock)
+	jsonData, marshalError := json.Marshal(exportData)
+	fmt.Println(string(jsonData))
 
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
@@ -120,7 +121,6 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	if marshalError != nil {
 		fmt.Errorf("Error: %v", marshalError)
 	}
-	fmt.Println(string(jsonData))
 	if err != nil {
 		logrus.Errorf(err.Error())
 	} else {

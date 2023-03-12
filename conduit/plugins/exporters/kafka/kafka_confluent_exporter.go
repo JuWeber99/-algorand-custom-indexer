@@ -6,6 +6,7 @@ import (
 	_ "embed" // used to embed config
 	"encoding/binary"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync/atomic"
@@ -115,6 +116,11 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(validBlock)
+	jsonData, marshalError := json.Marshal(validBlock)
+	if marshalError != nil {
+		fmt.Errorf("Error: %v", marshalError)
+	}
+	fmt.Println(jsonData)
 	if err != nil {
 		logrus.Errorf(err.Error())
 	} else {

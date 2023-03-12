@@ -120,6 +120,11 @@ func (exp *kafkaExporter) Config() string {
 	return string(ret)
 }
 
+// Config returns the unmarshaled config object
+func (exp *kafkaExporter) unmarhshalConfig(cfg string) error {
+	return yaml.Unmarshal([]byte(cfg), &exp.cfg)
+}
+
 // Close provides the opportunity to close connections, flush buffers, etc. when the process is terminating
 func (exp *kafkaExporter) Close() error {
 	fmt.Printf("WOOP WOOP")

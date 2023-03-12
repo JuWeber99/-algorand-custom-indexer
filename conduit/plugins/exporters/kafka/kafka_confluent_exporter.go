@@ -146,10 +146,10 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 	if err != nil {
 		logrus.Errorf("Error: %s", err.Error())
 	} else {
-		logrus.Infof("Produced Message pack equivalent of Block: %v", producedMessage.Value)
+		logrus.Infof("Produced Message pack equivalent of Block for Round: %d", binary.LittleEndian.Uint64(producedMessage.Key))
 	}
-	fmt.Printf("ready, round finished: %d", &exp.round)
 	atomic.StoreUint64(&exp.round, exportData.Round()+1)
+	logrus.Infof("Advancing conduit round by 1 to: %d", exp.round)
 	return nil
 }
 

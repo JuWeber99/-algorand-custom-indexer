@@ -26,6 +26,7 @@ type kafkaExporter struct {
 	kafkaConfigMap *kafka.ConfigMap
 	producer       *kafka.Producer
 	logger         *logrus.Logger
+	DlqName        *string
 }
 
 // Each Exporter should implement its own Metadata object. These fields shouldn't change at runtime so there is
@@ -63,14 +64,14 @@ func ProduceMessage(exporter *kafkaExporter, key []byte, value []byte, topic str
 
 	if m.TopicPartition.Error != nil {
 		logrus.Errorf("Delivery failed: %v\n", m.TopicPartition.Error)
-		logrus.Infof("Writing to DLQ: %v\n", exporter.cfg.DlqTopic)
+		logrus.Infof("Writing to DLQ: %v\n", *exporter.DlqName)
 
 	} else {
 		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
 			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
 		err := exporter.producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{
-				Topic: &exporter.cfg.DlqTopic, Partition: kafka.PartitionAny,
+				Topic: exporter.DlqName, Partition: kafka.PartitionAny,
 			},
 			Value: value,
 			Key:   key,
@@ -99,9 +100,8 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 		"sasl.password":      exp.cfg.Password,
 		"enable.idempotence": true,
 	}
-	if &exp.cfg.DlqTopic == nil {
-		exp.cfg.DlqTopic = fmt.Sprintf("dlq_%s", exp.cfg.Topic)
-	}
+	deadLetterQueTopicName := fmt.Sprintf("dlq_%s", exp.cfg.Topic)
+	exp.DlqName = &deadLetterQueTopicName
 
 	p, err := kafka.NewProducer(exp.kafkaConfigMap)
 	if err != nil {

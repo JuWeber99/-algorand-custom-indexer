@@ -1,11 +1,9 @@
 package kafka
 
 import (
-	"bytes"
 	"context"
 	_ "embed" // used to embed config
 	"encoding/binary"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -20,7 +18,6 @@ import (
 	"github.com/algorand/indexer/conduit/data"
 	"github.com/algorand/indexer/conduit/plugins"
 	"github.com/algorand/indexer/conduit/plugins/exporters"
-	"github.com/algorand/indexer/types"
 )
 
 // This is our exporter object. It should store all the in memory data required to run the Exporter.
@@ -62,6 +59,9 @@ func (exp *kafkaExporter) Init(ctx context.Context, initializationProvider data.
 		"sasl.password":      exp.cfg.Password,
 		"enable.idempotence": true,
 	}
+	if &exp.cfg.DlqTopic == nil {
+		fmt.Printf("ASDDDDDDDDDDDFFFFFFFFFFFFFFFFFFFA")
+	}
 
 	p, err := kafka.NewProducer(exp.kafkaConfigMap)
 	if err != nil {
@@ -101,51 +101,33 @@ func (exp *kafkaExporter) Receive(exportData data.BlockData) error {
 			return fmt.Errorf("receive got an invalid block: %#v", exportData)
 		}
 	}
-	// Do we need to test for consensus protocol here?
-	/*
-		_, ok := config.Consensus[block.CurrentProtocol]
-			if !ok {
-				return fmt.Errorf("protocol %s not found", block.CurrentProtocol)
-		}
-	*/
-	validBlock := types.ValidatedBlock{
-		Block: sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset},
-		Delta: *exportData.Delta,
-	}
-	jsonData, marshalError := json.Marshal(sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset})
-	fmt.Printf(string(jsonData))
-	fmt.Printf("round is: %v", exportData.Round())
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(validBlock)
+
+	jsonBlock, marshalError := json.Marshal(sdk.Block{BlockHeader: exportData.BlockHeader, Payset: exportData.Payset})
+
 	if marshalError != nil {
-		fmt.Printf("Error: %v", marshalError)
-	}
-	if err != nil {
-		logrus.Errorf(err.Error())
-	} else {
-		logrus.Debugln(buf)
+		logrus.Errorf("Error: %v", marshalError)
 	}
 	offset := make([]byte, 8)
 	binary.LittleEndian.PutUint64(offset, exp.round)
 	delivery_chan := make(chan kafka.Event, 10000)
-	fmt.Println("offset")
-	fmt.Println(offset)
-	fmt.Println("round")
-	fmt.Println(exp.round)
-	err = exp.producer.Produce(&kafka.Message{
+	err := exp.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic: &exp.cfg.Topic, Partition: kafka.PartitionAny,
 		},
-		Value: buf.Bytes(), //here eneded the encoded
+		Value: jsonBlock,
 		Key:   offset,
 	}, delivery_chan)
-
+	if err != nil {
+		defer exp.producer.Close()
+		logrus.Errorf(err.Error())
+	}
 	e := <-delivery_chan
 	m := e.(*kafka.Message)
 
 	if m.TopicPartition.Error != nil {
-		fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+		logrus.Errorf("Delivery failed: %v\n", m.TopicPartition.Error)
+		logrus.Infof("Writing to DLQ: %v\n", exp.cfg.DlqTopic)
+
 	} else {
 		fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
 			*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
